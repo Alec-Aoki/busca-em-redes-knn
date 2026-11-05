@@ -82,9 +82,7 @@ busca-em-redes-knn/
 │   ├── exp1_visualizacao.py
 │   ├── exp2_estatisticas.py
 │   └── exp3_astar_dijkstra.py
-├── resultados/               # gerado pelos scripts (CSV, PNG, GIF, MP4)
-├── relatorio/                # artigo
-└── slides/
+└── resultados/               # gerado pelos scripts (CSV, PNG, GIF, MP4)
 ```
 
 ### Interfaces combinadas
@@ -125,7 +123,7 @@ Os eventos são a "gravação" da execução: a visualização só reproduz essa
 
 ### Base
 - [x] `requirements.txt` (`numpy`, `scipy`, `matplotlib`, `pandas`; `pillow` para GIF, `ffmpeg` no sistema para MP4)
-- [ ] `rede.py`: `gera_vertices`, `gera_rede_knn` (KDTree do scipy ou força bruta com numpy), arestas não-direcionadas sem duplicatas
+- [ ] `rede.py`: `gera_vertices`, `gera_rede_knn` (força bruta com numpy), arestas não-direcionadas sem duplicatas
 - [ ] `utils.py`: componentes conexas (BFS simples), sorteio de pares na mesma componente, controle de semente
 - [ ] `heuristicas.py`: distância euclidiana
 - [ ] `resultado.py`: `ResultadoBusca` + função que reconstrói o caminho a partir do dicionário de pais e soma a distância
