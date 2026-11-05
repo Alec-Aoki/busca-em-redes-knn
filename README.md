@@ -125,7 +125,7 @@ Os eventos são a "gravação" da execução: a visualização só reproduz essa
 - [x] `requirements.txt` (`numpy`, `scipy`, `matplotlib`, `pandas`; `pillow` para GIF, `ffmpeg` no sistema para MP4)
 - [X] `rede.py`: `gera_vertices`, `gera_rede_knn` (força bruta com numpy), arestas não-direcionadas sem duplicatas
 - [X] `utils.py`: componentes conexas (BFS simples), sorteio de pares na mesma componente, controle de semente
-- [ ] `heuristicas.py`: distância euclidiana
+- [X] `heuristicas.py`: distância euclidiana
 - [ ] `resultado.py`: `ResultadoBusca` + função que reconstrói o caminho a partir do dicionário de pais e soma a distância
 
 ### Algoritmos
