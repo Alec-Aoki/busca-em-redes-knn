@@ -124,7 +124,7 @@ Os eventos são a "gravação" da execução: a visualização só reproduz essa
 ## 4. To-do
 
 ### Base
-- [ ] `requirements.txt` (`numpy`, `scipy`, `matplotlib`, `pandas`; `pillow` para GIF, `ffmpeg` no sistema para MP4)
+- [x] `requirements.txt` (`numpy`, `scipy`, `matplotlib`, `pandas`; `pillow` para GIF, `ffmpeg` no sistema para MP4)
 - [ ] `rede.py`: `gera_vertices`, `gera_rede_knn` (KDTree do scipy ou força bruta com numpy), arestas não-direcionadas sem duplicatas
 - [ ] `utils.py`: componentes conexas (BFS simples), sorteio de pares na mesma componente, controle de semente
 - [ ] `heuristicas.py`: distância euclidiana
