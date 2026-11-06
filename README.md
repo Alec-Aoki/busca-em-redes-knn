@@ -129,7 +129,7 @@ Os eventos são a "gravação" da execução: a visualização só reproduz essa
 - [X] `resultado.py`: `ResultadoBusca` + função que reconstrói o caminho a partir do dicionário de pais e soma a distância
 
 ### Algoritmos
-- [ ] BFS (fila `collections.deque`)
+- [X] BFS (fila `collections.deque`)
 - [ ] DFS (pilha, iterativa para não estourar recursão com n = 2500)
 - [ ] Best-First (`heapq` por `h`)
 - [ ] A* (`heapq` por `g + h`, com descarte de entradas obsoletas do heap)
