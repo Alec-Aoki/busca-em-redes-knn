@@ -31,6 +31,7 @@ O enunciado pede: para uma rede, escolher origem e destino, rodar todos os algor
 Como vamos atender:
 
 - Uma rede KNN de **~300 vértices**, com o **mesmo par origem/destino para todos os algoritmos**, para a comparação ser justa.
+- **Dois pares origem/destino**: um em que todos os algoritmos chegam ao destino e outro em que o Hill Climbing fica preso em um mínimo local. Assim a visualização mostra tanto o caso de sucesso quanto a falha característica do Hill Climbing. Na falha, a trajetória até o mínimo local é reconstruída a partir dos eventos de expansão, já que o `ResultadoBusca` volta com o caminho vazio.
 - **Uma animação por algoritmo** (GIF ou MP4), passo a passo, com este código de cores:
   - cinza: vértice ainda não visto
   - amarelo: na fronteira (fila/pilha/heap)
@@ -138,7 +139,7 @@ Os eventos são a "gravação" da execução: a visualização só reproduz essa
 - [ ] Teste rápido: A* e Dijkstra devem dar a mesma distância em vários pares
 
 ### Experimentos
-- [ ] `exp1_visualizacao.py`: rede de ~300 vértices, um par, roda os 6, gera 6 animações + grade 2×3 + CSV com caminhos e distâncias
+- [ ] `exp1_visualizacao.py`: rede de ~300 vértices, dois pares (um com sucesso de todos, um com falha do Hill Climbing), roda os 6 em cada, gera as animações + grade 2×3 por par + CSV com caminhos e distâncias
 - [ ] `exp2_estatisticas.py`: n = 2500, k ∈ {3, 7, 11}, 30 pares, CSV com médias/desvios, tabela para o relatório
 - [ ] `exp3_astar_dijkstra.py`: tabela comparativa + gráfico (extra)
 
