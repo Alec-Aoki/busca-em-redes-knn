@@ -16,7 +16,7 @@ from resultado import ResultadoBusca
 # Assinatura comum a todos os algoritmos: (grafo, origem, destino, gravarEventos) -> ResultadoBusca
 FuncaoBusca = Callable[[Grafo, int, int, bool], ResultadoBusca]
 
-# Associa o nome usado nas tabelas e figuras à função de cada algoritmo, na mesma ordem do enunciado
+# Associa o nome usado nas tabelas e figuras à função de cada algoritmo
 ALGORITMOS: dict[str, FuncaoBusca] = {
     "DFS": busca_profundidade,
     "BFS": busca_largura,
