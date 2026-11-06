@@ -139,7 +139,7 @@ Os eventos são a "gravação" da execução: a visualização só reproduz essa
 - [X] Teste rápido: A* e Dijkstra devem dar a mesma distância em vários pares
 
 ### Experimentos
-- [ ] `exp1_visualizacao.py`: rede de ~300 vértices, dois pares (um com sucesso de todos, um com falha do Hill Climbing), roda os 6 em cada, gera as animações + grade 2×3 por par + CSV com caminhos e distâncias
+- [X] `exp1_visualizacao.py`: rede de ~300 vértices, dois pares (um com sucesso de todos, um com falha do Hill Climbing), roda os 6 em cada, gera as animações + grade 2×3 por par + CSV com caminhos e distâncias
 - [ ] `exp2_estatisticas.py`: n = 2500, k ∈ {3, 7, 11}, 30 pares, CSV com médias/desvios, tabela para o relatório
 - [ ] `exp3_astar_dijkstra.py`: tabela comparativa + gráfico (extra)
 
