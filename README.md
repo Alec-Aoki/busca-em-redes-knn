@@ -131,7 +131,7 @@ Os eventos são a "gravação" da execução: a visualização só reproduz essa
 ### Algoritmos
 - [X] BFS (fila `collections.deque`)
 - [X] DFS (pilha, iterativa para não estourar recursão com n = 2500)
-- [ ] Best-First (`heapq` por `h`)
+- [X] Best-First (`heapq` por `h`)
 - [ ] A* (`heapq` por `g + h`, com descarte de entradas obsoletas do heap)
 - [ ] Hill Climbing sem backtracking (reporta falha em mínimo local)
 - [ ] Dijkstra (`heapq` por `g`, parando ao expandir o destino)
