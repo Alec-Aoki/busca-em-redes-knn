@@ -135,8 +135,8 @@ Os eventos são a "gravação" da execução: a visualização só reproduz essa
 - [X] Best-First (`heapq` por `h`)
 - [X] A* (`heapq` por `g + h`, com descarte de entradas obsoletas do heap)
 - [X] Hill Climbing sem backtracking (reporta falha em mínimo local)
-- [ ] Dijkstra (`heapq` por `g`, parando ao expandir o destino)
-- [ ] Teste rápido: A* e Dijkstra devem dar a mesma distância em vários pares
+- [X] Dijkstra (`heapq` por `g`, parando ao expandir o destino)
+- [X] Teste rápido: A* e Dijkstra devem dar a mesma distância em vários pares
 
 ### Experimentos
 - [ ] `exp1_visualizacao.py`: rede de ~300 vértices, dois pares (um com sucesso de todos, um com falha do Hill Climbing), roda os 6 em cada, gera as animações + grade 2×3 por par + CSV com caminhos e distâncias
