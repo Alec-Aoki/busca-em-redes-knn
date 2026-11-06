@@ -133,7 +133,7 @@ Os eventos são a "gravação" da execução: a visualização só reproduz essa
 - [X] DFS (pilha, iterativa para não estourar recursão com n = 2500)
 - [X] Best-First (`heapq` por `h`)
 - [X] A* (`heapq` por `g + h`, com descarte de entradas obsoletas do heap)
-- [ ] Hill Climbing sem backtracking (reporta falha em mínimo local)
+- [X] Hill Climbing sem backtracking (reporta falha em mínimo local)
 - [ ] Dijkstra (`heapq` por `g`, parando ao expandir o destino)
 - [ ] Teste rápido: A* e Dijkstra devem dar a mesma distância em vários pares
 
