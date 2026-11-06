@@ -7,7 +7,7 @@ from collections import deque
 
 import numpy as np
 
-from rede import Grafo
+from rede import Grafo, gera_rede_knn
 
 # Semente usada por padrão em todos os experimentos, para que os resultados sejam reproduzíveis
 SEMENTE_PADRAO = 42
@@ -163,8 +163,6 @@ def sorteia_pares(
     return pares
 
 if __name__ == "__main__":
-    from rede import gera_rede_knn
-
     # Mostra quantas componentes cada configuração do experimento ii tem e o tamanho da maior
     for valorK in (3, 7, 11):
         grafoTeste = gera_rede_knn(2500, valorK, semente=SEMENTE_PADRAO)

@@ -4,7 +4,7 @@ Busca em largura (BFS).
 
 from collections import deque
 
-from rede import Grafo
+from rede import Grafo, gera_rede_knn
 from resultado import (
     EVENTO_EXPANDIDO,
     EVENTO_FRONTEIRA,
@@ -12,6 +12,7 @@ from resultado import (
     monta_resultado_falha,
     monta_resultado_sucesso,
 )
+from utils import sorteia_pares
 
 def busca_largura(grafo: Grafo, origem: int, destino: int, gravarEventos: bool = False) -> ResultadoBusca:
     """
@@ -82,9 +83,6 @@ def busca_largura(grafo: Grafo, origem: int, destino: int, gravarEventos: bool =
     return monta_resultado_falha(nosExpandidos, eventos)
 
 if __name__ == "__main__":
-    from rede import gera_rede_knn
-    from utils import sorteia_pares
-
     # Gera uma rede pequena e sorteia um par afastado para testar
     grafoTeste = gera_rede_knn(300, 5, semente=42)
     origemTeste, destinoTeste = sorteia_pares(grafoTeste, 1, distanciaMinima=200)[0]
