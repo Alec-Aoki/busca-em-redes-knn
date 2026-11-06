@@ -1,0 +1,4 @@
+k,pares,distancias_iguais,distancia_media,expandidos_medio_a_estrela,expandidos_medio_dijkstra,razao_expandidos_media,tempo_medio_ms_a_estrela,tempo_medio_ms_dijkstra,razao_tempo_media,reducao_expandidos_pct
+3,30,30,1954.9187,422.0667,1289.7667,4.0217,0.5880,1.1501,2.5389,67.2757
+7,30,30,1478.8560,195.6667,1285.8667,9.2017,0.4861,1.8986,5.3121,84.7833
+11,30,30,1422.5399,125.3333,1286.9000,13.0599,0.4218,2.4990,7.2193,90.2608
