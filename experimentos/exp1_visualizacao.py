@@ -12,6 +12,13 @@ import csv
 import sys
 from pathlib import Path
 
+import matplotlib
+
+# Usa o backend Agg, que desenha direto em arquivo e funciona sem janela gráfica
+matplotlib.use("Agg")
+
+import matplotlib.pyplot as plt
+
 # Caminho da raiz do projeto, que fica uma pasta acima desta
 RAIZ_PROJETO = Path(__file__).resolve().parent.parent
 
@@ -22,7 +29,7 @@ from algoritmos import ALGORITMOS
 from rede import Grafo, gera_rede_knn
 from resultado import ResultadoBusca
 from utils import SEMENTE_PADRAO, sorteia_pares
-from visualizacao import cria_animacao, salva_animacao, salva_grade
+from visualizacao import COR_FUNDO, cria_animacao, cria_legenda, desenha_estado_final, salva_animacao, salva_grade
 
 # Número de vértices da rede, dentro da faixa de 100 a 500 pedida pelo enunciado
 QUANTIDADE_VERTICES = 300
@@ -121,6 +128,52 @@ def salva_csv(caminhoArquivo: Path, cenario: str, origem: int, destino: int, res
                 "-".join(str(vertice) for vertice in resultado.caminho),
             ])
 
+def monta_nome_arquivo(nomeAlgoritmo: str) -> str:
+    """
+    Converte o nome de um algoritmo em um nome de arquivo sem espaços, hífens nem asterisco.
+
+    Args:
+        nomeAlgoritmo: Nome do algoritmo, como no dicionário ALGORITMOS.
+
+    Returns:
+        O nome do arquivo sem extensão, por exemplo "hill_climbing" e "a_estrela".
+    """
+    # Troca o asterisco por "_estrela" e os espaços e hífens por underline, tudo em minúsculas
+    return nomeAlgoritmo.lower().replace("*", "_estrela").replace(" ", "_").replace("-", "_")
+
+def salva_estado_final(
+    grafo: Grafo,
+    origem: int,
+    destino: int,
+    nomeAlgoritmo: str,
+    resultado: ResultadoBusca,
+    caminhoArquivo: Path,
+) -> None:
+    """
+    Salva em PNG o estado final de um único algoritmo, com a legenda embaixo.
+
+    Args:
+        grafo: Rede onde a busca foi feita.
+        origem: Vértice de partida.
+        destino: Vértice de destino.
+        nomeAlgoritmo: Nome mostrado no título da figura.
+        resultado: Resultado da busca, que precisa ter sido executada com gravarEventos=True.
+        caminhoArquivo: Caminho do arquivo de imagem a salvar.
+    """
+    # Cria uma figura quadrada com um único eixo, deixando espaço embaixo para a legenda
+    figura, eixo = plt.subplots(figsize=(8, 8.8), facecolor=COR_FUNDO)
+    figura.subplots_adjust(left=0.03, right=0.97, top=0.9, bottom=0.1)
+
+    # Desenha a rede com o estado final da busca e o caminho encontrado (ou a trajetória até a falha)
+    desenha_estado_final(eixo, grafo, origem, destino, nomeAlgoritmo, resultado)
+    cria_legenda(figura)
+
+    # Salva recortando as sobras de margem, sem cortar o título de duas linhas
+    figura.savefig(caminhoArquivo, dpi=150, facecolor=COR_FUNDO, bbox_inches="tight", pad_inches=0.15)
+
+    # Fecha a figura, já que o matplotlib mantém todas as figuras abertas na memória
+    plt.close(figura)
+
 def imprime_tabela(cenario: str, origem: int, destino: int, resultados: dict[str, ResultadoBusca]) -> None:
     """
     Mostra no terminal o caminho e a distância final de cada algoritmo, como pede o enunciado.
@@ -169,10 +222,13 @@ def roda_cenario(grafo: Grafo, cenario: str, origem: int, destino: int) -> None:
     salva_csv(pastaCenario / "resultados.csv", cenario, origem, destino, resultados)
     salva_grade(grafo, origem, destino, resultados, pastaCenario / "grade.png")
 
-    # Gera a animação de cada algoritmo
+    # Gera a imagem final e a animação de cada algoritmo
     for nomeAlgoritmo, resultado in resultados.items():
         # Monta um nome de arquivo sem espaços nem asterisco, por exemplo "hill_climbing" e "a_estrela"
-        nomeArquivo = nomeAlgoritmo.lower().replace("*", "_estrela").replace(" ", "_").replace("-", "_")
+        nomeArquivo = monta_nome_arquivo(nomeAlgoritmo)
+
+        # Salva o estado final deste algoritmo sozinho, além da grade com todos
+        salva_estado_final(grafo, origem, destino, nomeAlgoritmo, resultado, pastaCenario / f"{nomeArquivo}.png")
 
         figura, animacaoBusca = cria_animacao(grafo, origem, destino, nomeAlgoritmo, resultado)
         salva_animacao(figura, animacaoBusca, pastaCenario / nomeArquivo, QUADROS_POR_SEGUNDO)

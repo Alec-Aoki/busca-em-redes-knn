@@ -67,7 +67,7 @@ busca-em-redes-knn/
 
 ### `experimentos/`
 
-**`exp1_visualizacao.py`** gera uma rede pequena (300 vértices) e escolhe dois pares (origem, destino): um em que todos os algoritmos chegam ao destino e outro em que o Hill Climbing fica preso em um mínimo local. Para cada par, roda os seis algoritmos e salva em `resultados/exp1/` uma animação por algoritmo, a figura em grade e um CSV com o caminho e a distância de cada um.
+**`exp1_visualizacao.py`** gera uma rede pequena (300 vértices) e escolhe dois pares (origem, destino): um em que todos os algoritmos chegam ao destino e outro em que o Hill Climbing fica preso em um mínimo local. Para cada par, roda os seis algoritmos e salva em `resultados/exp1/` uma animação e uma imagem do estado final de cada algoritmo, a figura em grade com todos juntos e um CSV com o caminho e a distância de cada um.
 
 **`exp2_estatisticas.py`** gera redes com 2500 vértices e `k = 3`, `7` e `11`, roda os seis algoritmos em 30 pares e calcula, para cada algoritmo e cada `k`, a distância média, o tempo médio, os desvios padrão, os nós expandidos e a taxa de sucesso. Salva em `resultados/exp2/` uma tabela com todas as execuções e outra com o resumo.
 
