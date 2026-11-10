@@ -4,12 +4,15 @@ Experimento i: visualização dos seis algoritmos de busca em uma rede KNN peque
 Gera uma rede de 300 vértices e escolhe dois pares (origem, destino): um em
 que todos os algoritmos chegam ao destino e outro em que o Hill Climbing fica
 preso em um mínimo local. Para cada par, roda os seis algoritmos e salva uma
-animação por algoritmo, a figura em grade com os estados finais e um CSV com
-caminho, distância e nós expandidos de cada um.
+animação e uma imagem do estado final de cada algoritmo, a figura em grade
+com todos juntos e um CSV com caminho, distância e nós expandidos de cada um.
 """
 
 import csv
+import itertools
 import sys
+import threading
+import time
 from pathlib import Path
 
 import matplotlib
@@ -52,6 +55,91 @@ PASTA_RESULTADOS = RAIZ_PROJETO / "resultados" / "exp1"
 # Nome de cada cenário, usado como nome da subpasta de saída
 CENARIO_SUCESSO = "sucesso"
 CENARIO_FALHA = "falha_hill_climbing"
+
+# Quadros do indicador de progresso, mostrados em sequência para dar a impressão de um traço girando
+QUADROS_INDICADOR = "|/-\\"
+
+# Intervalo entre dois quadros do indicador, em segundos
+INTERVALO_INDICADOR = 0.15
+
+class IndicadorProgresso:
+    """
+    Mostra no terminal um traço girando e o tempo decorrido enquanto uma tarefa demorada roda.
+
+    Deve ser usado com `with`: o indicador começa ao entrar no bloco e é
+    apagado ao sair, deixando no lugar uma linha com o tempo total gasto. A
+    animação roda em uma thread separada, para que a tarefa principal não
+    precise parar para atualizar o terminal.
+
+    Attributes:
+        mensagem: Texto mostrado ao lado do traço, descrevendo a tarefa.
+    """
+
+    def __init__(self, mensagem: str) -> None:
+        """
+        Prepara o indicador sem iniciá-lo.
+
+        Args:
+            mensagem: Texto mostrado ao lado do traço, descrevendo a tarefa.
+        """
+        self.mensagem = mensagem
+
+        # Sinal usado para avisar a thread do indicador que ela deve parar
+        self.sinalParada = threading.Event()
+
+        # Thread que desenha o indicador; daemon=True faz ela morrer junto com o programa se ele for interrompido
+        self.threadIndicador = threading.Thread(target=self.anima, daemon=True)
+
+        # Instante em que o indicador começou, preenchido ao entrar no bloco with
+        self.instanteInicio = 0.0
+
+    def anima(self) -> None:
+        """
+        Redesenha a linha do indicador até receber o sinal de parada.
+        """
+        # Percorre os quadros do traço em ciclo infinito: |, /, -, \, |, /, ...
+        for quadroAtual in itertools.cycle(QUADROS_INDICADOR):
+            # Para o laço assim que a tarefa principal terminar
+            if self.sinalParada.is_set():
+                break
+
+            # Calcula há quantos segundos a tarefa começou
+            segundosDecorridos = time.perf_counter() - self.instanteInicio
+
+            # O \r volta o cursor para o começo da linha, então cada desenho sobrescreve o anterior
+            print(f"\r{quadroAtual} {self.mensagem} ({segundosDecorridos:.0f}s)", end="", flush=True)
+
+            # Espera o próximo quadro; o wait retorna antes do tempo se o sinal de parada chegar
+            self.sinalParada.wait(INTERVALO_INDICADOR)
+
+    def __enter__(self) -> "IndicadorProgresso":
+        """
+        Marca o instante de início e começa a animação.
+        """
+        self.instanteInicio = time.perf_counter()
+        self.threadIndicador.start()
+        return self
+
+    def __exit__(self, tipoExcecao, valorExcecao, rastreamento) -> None:
+        """
+        Para a animação e troca a linha do indicador pela mensagem final.
+
+        Args:
+            tipoExcecao: Tipo da exceção levantada dentro do bloco, ou None.
+            valorExcecao: Exceção levantada dentro do bloco, ou None.
+            rastreamento: Rastreamento da exceção, ou None.
+        """
+        # Avisa a thread que ela deve parar e espera ela terminar o desenho atual
+        self.sinalParada.set()
+        self.threadIndicador.join()
+
+        segundosDecorridos = time.perf_counter() - self.instanteInicio
+
+        # Escolhe o símbolo final conforme a tarefa tenha terminado normalmente ou com erro
+        simboloFinal = "ok" if tipoExcecao is None else "erro"
+
+        # Sobrescreve a linha do indicador; os espaços extras apagam restos de uma linha anterior mais longa
+        print(f"\r[{simboloFinal}] {self.mensagem} ({segundosDecorridos:.1f}s)" + " " * 10)
 
 def escolhe_pares(grafo: Grafo) -> dict[str, tuple[int, int]]:
     """
@@ -220,19 +308,24 @@ def roda_cenario(grafo: Grafo, cenario: str, origem: int, destino: int) -> None:
 
     imprime_tabela(cenario, origem, destino, resultados)
     salva_csv(pastaCenario / "resultados.csv", cenario, origem, destino, resultados)
-    salva_grade(grafo, origem, destino, resultados, pastaCenario / "grade.png")
+    print()
 
-    # Gera a imagem final e a animação de cada algoritmo
-    for nomeAlgoritmo, resultado in resultados.items():
+    # Salva a grade mostrando o indicador de progresso, já que ela leva alguns segundos
+    with IndicadorProgresso(f"{cenario}: salvando a grade"):
+        salva_grade(grafo, origem, destino, resultados, pastaCenario / "grade.png")
+
+    # Gera a imagem final e a animação de cada algoritmo, numerando para o usuário saber quanto falta
+    for indiceAlgoritmo, (nomeAlgoritmo, resultado) in enumerate(resultados.items(), start=1):
         # Monta um nome de arquivo sem espaços nem asterisco, por exemplo "hill_climbing" e "a_estrela"
         nomeArquivo = monta_nome_arquivo(nomeAlgoritmo)
 
-        # Salva o estado final deste algoritmo sozinho, além da grade com todos
-        salva_estado_final(grafo, origem, destino, nomeAlgoritmo, resultado, pastaCenario / f"{nomeArquivo}.png")
+        # Mostra o indicador enquanto a imagem e a animação são salvas, que é a parte demorada do script
+        with IndicadorProgresso(f"{cenario}: {nomeAlgoritmo} [{indiceAlgoritmo}/{len(resultados)}]"):
+            # Salva o estado final deste algoritmo sozinho, além da grade com todos
+            salva_estado_final(grafo, origem, destino, nomeAlgoritmo, resultado, pastaCenario / f"{nomeArquivo}.png")
 
-        figura, animacaoBusca = cria_animacao(grafo, origem, destino, nomeAlgoritmo, resultado)
-        salva_animacao(figura, animacaoBusca, pastaCenario / nomeArquivo, QUADROS_POR_SEGUNDO)
-        print(f"animação salva: {cenario}/{nomeArquivo}")
+            figura, animacaoBusca = cria_animacao(grafo, origem, destino, nomeAlgoritmo, resultado)
+            salva_animacao(figura, animacaoBusca, pastaCenario / nomeArquivo, QUADROS_POR_SEGUNDO)
 
 def main() -> None:
     """
