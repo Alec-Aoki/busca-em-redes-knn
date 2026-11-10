@@ -1,4 +1,4 @@
-k,pares,distancias_iguais,distancia_media,expandidos_medio_a_estrela,expandidos_medio_dijkstra,razao_expandidos_media,tempo_medio_ms_a_estrela,tempo_medio_ms_dijkstra,razao_tempo_media,reducao_expandidos_pct
-3,30,30,1954.9187,422.0667,1289.7667,4.0217,0.5880,1.1501,2.5389,67.2757
-7,30,30,1478.8560,195.6667,1285.8667,9.2017,0.4861,1.8986,5.3121,84.7833
-11,30,30,1422.5399,125.3333,1286.9000,13.0599,0.4218,2.4990,7.2193,90.2608
+k,pares,distancias_iguais,distancias_iguais_chebyshev,distancia_media,expandidos_medio_a_estrela,expandidos_medio_a_estrela_chebyshev,expandidos_medio_dijkstra,razao_expandidos_media,razao_expandidos_media_chebyshev,tempo_medio_ms_a_estrela,tempo_medio_ms_a_estrela_chebyshev,tempo_medio_ms_dijkstra,razao_tempo_media,razao_tempo_media_chebyshev,reducao_expandidos_pct,reducao_expandidos_chebyshev_pct
+3,30,30,30,1954.9187,422.0667,510.9333,1289.7667,4.0217,3.2075,0.6189,0.6137,1.2180,2.5724,2.4958,67.2757,60.3856
+7,30,30,30,1478.8560,195.6667,347.3333,1285.8667,9.2017,5.0196,0.4827,0.8094,1.9142,5.3892,3.2611,84.7833,72.9884
+11,30,30,30,1422.5399,125.3333,313.1333,1286.9000,13.0599,5.8203,0.4241,1.0227,2.5197,7.2359,3.5163,90.2608,75.6676

@@ -2,13 +2,17 @@
 Experimento iii: comparação entre A* e Dijkstra.
 
 Usa as execuções salvas pelo experimento ii, que precisa ter sido rodado
-antes. Para cada valor de k, confere que os dois algoritmos encontram a mesma
-distância, compara nós expandidos e tempo, e gera um gráfico de nós
-expandidos em função da distância em linha reta entre origem e destino.
+antes. Além do A* com a heurística euclidiana e do Dijkstra, roda nos mesmos
+pares um A* com a heurística de Chebyshev, que também é admissível mas
+estima pior o custo restante. Para cada valor de k, confere que os três
+encontram a mesma distância, compara nós expandidos e tempo, e gera um
+gráfico de nós expandidos em função da distância em linha reta entre origem
+e destino.
 """
 
 import math
 import sys
+from functools import partial
 from pathlib import Path
 
 import matplotlib
@@ -23,23 +27,29 @@ import pandas as pd
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 from exp2_estatisticas import PASTA_RESULTADOS as PASTA_EXP2
-from exp2_estatisticas import QUANTIDADE_VERTICES, RAIZ_PROJETO, VALORES_K
+from exp2_estatisticas import QUANTIDADE_VERTICES, RAIZ_PROJETO, VALORES_K, mede_busca
+from algoritmos.a_estrela import busca_a_estrela
+from heuristicas import heuristica_chebyshev
 from rede import gera_rede_knn
 from utils import SEMENTE_PADRAO
 
 # Pasta onde os resultados do experimento são salvos
 PASTA_RESULTADOS = RAIZ_PROJETO / "resultados" / "exp3"
 
-# Nomes dos dois algoritmos comparados, iguais às chaves do dicionário ALGORITMOS
+# Nomes dos dois algoritmos lidos do experimento ii, iguais às chaves do dicionário ALGORITMOS
 NOME_A_ESTRELA = "A*"
 NOME_DIJKSTRA = "Dijkstra"
+
+# Nome do A* com a heurística de Chebyshev, que é rodado neste experimento
+NOME_A_ESTRELA_CHEBYSHEV = "A* Chebyshev"
 
 # Tolerância para considerar duas distâncias iguais, ignorando erros de arredondamento de ponto flutuante
 TOLERANCIA_DISTANCIA = 1e-6
 
-# Cores do gráfico: as duas primeiras posições da paleta categórica validada
+# Cores do gráfico: as três primeiras posições da paleta categórica validada
 COR_A_ESTRELA = "#2a78d6"
 COR_DIJKSTRA = "#eb6834"
+COR_A_ESTRELA_CHEBYSHEV = "#1baf7a"
 
 # Cores de fundo, texto e grade do gráfico
 COR_FUNDO = "#fcfcfb"
@@ -85,6 +95,55 @@ def carrega_comparacao() -> pd.DataFrame:
 
     return comparacao.reset_index()
 
+def adiciona_a_estrela_chebyshev(comparacao: pd.DataFrame) -> pd.DataFrame:
+    """
+    Roda o A* com a heurística de Chebyshev nos mesmos pares e redes do experimento ii.
+
+    O tempo é medido da mesma forma que no experimento ii, reaproveitando a
+    função mede_busca de lá. Para que os tempos sejam comparáveis com os do
+    A* euclidiano e do Dijkstra, este experimento deve rodar na mesma máquina
+    e logo depois do experimento ii.
+
+    Args:
+        comparacao: Tabela gerada por carrega_comparacao.
+
+    Returns:
+        A mesma tabela com as colunas de distância, nós expandidos e tempo do A* com Chebyshev.
+    """
+    #
+    # Fixa a heurística de Chebyshev no A*, criando uma função que recebe só
+    # (grafo, origem, destino, gravarEventos), a mesma assinatura que o
+    # mede_busca espera dos algoritmos do dicionário ALGORITMOS
+    #
+    buscaChebyshev = partial(busca_a_estrela, funcaoHeuristica=heuristica_chebyshev)
+
+    # Listas com os resultados de cada linha da tabela, na mesma ordem das linhas
+    distancias = []
+    nosExpandidos = []
+    tempos = []
+
+    # Guarda a rede de cada k já gerada, para não gerar a mesma rede uma vez por par
+    redesPorK = {}
+
+    # Percorre os pares na ordem das linhas da tabela
+    for valorK, origem, destino in zip(comparacao["k"], comparacao["origem"], comparacao["destino"]):
+        # Gera a rede deste k só na primeira vez em que ele aparece, com a mesma semente do experimento ii
+        if valorK not in redesPorK:
+            redesPorK[valorK] = gera_rede_knn(QUANTIDADE_VERTICES, int(valorK), semente=SEMENTE_PADRAO)
+
+        resultado, tempoMs = mede_busca(buscaChebyshev, redesPorK[valorK], int(origem), int(destino))
+
+        distancias.append(resultado.distancia)
+        nosExpandidos.append(resultado.nosExpandidos)
+        tempos.append(tempoMs)
+
+    # Adiciona as três colunas novas, seguindo o mesmo padrão de nome das outras
+    comparacao[f"distancia_{NOME_A_ESTRELA_CHEBYSHEV}"] = distancias
+    comparacao[f"nos_expandidos_{NOME_A_ESTRELA_CHEBYSHEV}"] = nosExpandidos
+    comparacao[f"tempo_ms_{NOME_A_ESTRELA_CHEBYSHEV}"] = tempos
+
+    return comparacao
+
 def adiciona_distancia_euclidiana(comparacao: pd.DataFrame) -> pd.DataFrame:
     """
     Adiciona a distância em linha reta entre origem e destino de cada par.
@@ -111,39 +170,54 @@ def adiciona_distancia_euclidiana(comparacao: pd.DataFrame) -> pd.DataFrame:
 
 def resume_comparacao(comparacao: pd.DataFrame) -> pd.DataFrame:
     """
-    Resume a comparação entre A* e Dijkstra para cada valor de k.
+    Resume a comparação entre os dois A* e o Dijkstra para cada valor de k.
 
     Args:
-        comparacao: Tabela gerada por carrega_comparacao.
+        comparacao: Tabela com as colunas dos três algoritmos.
 
     Returns:
         Tabela com uma linha por k.
     """
-    # Calcula, par a par, a diferença absoluta de distância entre os dois algoritmos
+    # Calcula, par a par, a diferença absoluta de distância de cada A* em relação ao Dijkstra
     comparacao["diferenca_distancia"] = (comparacao[f"distancia_{NOME_A_ESTRELA}"] - comparacao[f"distancia_{NOME_DIJKSTRA}"]).abs()
+    comparacao["diferenca_distancia_chebyshev"] = (comparacao[f"distancia_{NOME_A_ESTRELA_CHEBYSHEV}"] - comparacao[f"distancia_{NOME_DIJKSTRA}"]).abs()
 
-    # Calcula, par a par, quantas vezes o Dijkstra expande mais vértices que o A*
+    # Calcula, par a par, quantas vezes o Dijkstra expande mais vértices que cada A*
     comparacao["razao_expandidos"] = comparacao[f"nos_expandidos_{NOME_DIJKSTRA}"] / comparacao[f"nos_expandidos_{NOME_A_ESTRELA}"]
+    comparacao["razao_expandidos_chebyshev"] = comparacao[f"nos_expandidos_{NOME_DIJKSTRA}"] / comparacao[f"nos_expandidos_{NOME_A_ESTRELA_CHEBYSHEV}"]
 
-    # Calcula, par a par, quantas vezes o Dijkstra é mais lento que o A*
+    # Calcula, par a par, quantas vezes o Dijkstra é mais lento que cada A*
     comparacao["razao_tempo"] = comparacao[f"tempo_ms_{NOME_DIJKSTRA}"] / comparacao[f"tempo_ms_{NOME_A_ESTRELA}"]
+    comparacao["razao_tempo_chebyshev"] = comparacao[f"tempo_ms_{NOME_DIJKSTRA}"] / comparacao[f"tempo_ms_{NOME_A_ESTRELA_CHEBYSHEV}"]
+
+    # Função que conta quantas diferenças de distância ficaram dentro da tolerância
+    def conta_iguais(diferencas: pd.Series) -> int:
+        """
+        Conta os pares em que a diferença de distância está dentro da tolerância.
+        """
+        return int((diferencas <= TOLERANCIA_DISTANCIA).sum())
 
     # Agrupa por k e calcula as estatísticas de cada grupo
     resumo = comparacao.groupby("k").agg(
         pares=("par", "count"),
-        # Conta os pares em que as distâncias ficaram dentro da tolerância
-        distancias_iguais=("diferenca_distancia", lambda diferencas: int((diferencas <= TOLERANCIA_DISTANCIA).sum())),
+        distancias_iguais=("diferenca_distancia", conta_iguais),
+        distancias_iguais_chebyshev=("diferenca_distancia_chebyshev", conta_iguais),
         distancia_media=(f"distancia_{NOME_A_ESTRELA}", "mean"),
         expandidos_medio_a_estrela=(f"nos_expandidos_{NOME_A_ESTRELA}", "mean"),
+        expandidos_medio_a_estrela_chebyshev=(f"nos_expandidos_{NOME_A_ESTRELA_CHEBYSHEV}", "mean"),
         expandidos_medio_dijkstra=(f"nos_expandidos_{NOME_DIJKSTRA}", "mean"),
         razao_expandidos_media=("razao_expandidos", "mean"),
+        razao_expandidos_media_chebyshev=("razao_expandidos_chebyshev", "mean"),
         tempo_medio_ms_a_estrela=(f"tempo_ms_{NOME_A_ESTRELA}", "mean"),
+        tempo_medio_ms_a_estrela_chebyshev=(f"tempo_ms_{NOME_A_ESTRELA_CHEBYSHEV}", "mean"),
         tempo_medio_ms_dijkstra=(f"tempo_ms_{NOME_DIJKSTRA}", "mean"),
         razao_tempo_media=("razao_tempo", "mean"),
+        razao_tempo_media_chebyshev=("razao_tempo_chebyshev", "mean"),
     )
 
-    # Calcula a redução percentual de nós expandidos do A* em relação ao Dijkstra, a partir das médias
+    # Calcula a redução percentual de nós expandidos de cada A* em relação ao Dijkstra, a partir das médias
     resumo["reducao_expandidos_pct"] = 100 * (1 - resumo["expandidos_medio_a_estrela"] / resumo["expandidos_medio_dijkstra"])
+    resumo["reducao_expandidos_chebyshev_pct"] = 100 * (1 - resumo["expandidos_medio_a_estrela_chebyshev"] / resumo["expandidos_medio_dijkstra"])
 
     return resumo.reset_index()
 
@@ -155,9 +229,16 @@ def salva_grafico(comparacao: pd.DataFrame, caminhoArquivo: Path) -> None:
     os três possam ser comparados diretamente.
 
     Args:
-        comparacao: Tabela com a coluna distancia_euclidiana.
+        comparacao: Tabela com a coluna distancia_euclidiana e as colunas dos três algoritmos.
         caminhoArquivo: Caminho do arquivo de imagem a salvar.
     """
+    # Lista das séries do gráfico, do algoritmo que mais expande para o que menos expande, como (nome, cor)
+    series = [
+        (NOME_DIJKSTRA, COR_DIJKSTRA),
+        (NOME_A_ESTRELA_CHEBYSHEV, COR_A_ESTRELA_CHEBYSHEV),
+        (NOME_A_ESTRELA, COR_A_ESTRELA),
+    ]
+
     # Cria um painel por k; sharey=True faz os três usarem a mesma escala vertical
     figura, listaEixos = plt.subplots(1, len(VALORES_K), figsize=(15, 5), sharey=True, facecolor=COR_FUNDO)
 
@@ -166,8 +247,8 @@ def salva_grafico(comparacao: pd.DataFrame, caminhoArquivo: Path) -> None:
         dadosK = comparacao[comparacao["k"] == valorK]
 
         # Desenha um ponto por par para cada algoritmo, com contorno da cor do fundo para separar pontos sobrepostos
-        eixo.scatter(dadosK["distancia_euclidiana"], dadosK[f"nos_expandidos_{NOME_DIJKSTRA}"], s=40, color=COR_DIJKSTRA, edgecolors=COR_FUNDO, linewidths=1, label=NOME_DIJKSTRA, zorder=3)
-        eixo.scatter(dadosK["distancia_euclidiana"], dadosK[f"nos_expandidos_{NOME_A_ESTRELA}"], s=40, color=COR_A_ESTRELA, edgecolors=COR_FUNDO, linewidths=1, label=NOME_A_ESTRELA, zorder=3)
+        for nomeAlgoritmo, cor in series:
+            eixo.scatter(dadosK["distancia_euclidiana"], dadosK[f"nos_expandidos_{nomeAlgoritmo}"], s=40, color=cor, edgecolors=COR_FUNDO, linewidths=1, label=nomeAlgoritmo, zorder=3)
 
         eixo.set_title(f"k = {valorK}", fontsize=12, color=COR_TEXTO)
         eixo.set_xlabel("Distância em linha reta entre origem e destino", fontsize=10, color=COR_TEXTO_SECUNDARIO)
@@ -191,7 +272,7 @@ def salva_grafico(comparacao: pd.DataFrame, caminhoArquivo: Path) -> None:
     # Coloca uma legenda só para os três painéis, no canto superior esquerdo do primeiro
     listaEixos[0].legend(frameon=False, fontsize=10, loc="upper left", labelcolor=COR_TEXTO)
 
-    figura.suptitle("Nós expandidos por A* e Dijkstra em redes KNN com 2500 vértices", fontsize=13, color=COR_TEXTO)
+    figura.suptitle("Nós expandidos por A* (euclidiana e Chebyshev) e Dijkstra em redes KNN com 2500 vértices", fontsize=13, color=COR_TEXTO)
     figura.tight_layout()
     figura.savefig(caminhoArquivo, dpi=150, facecolor=COR_FUNDO)
     plt.close(figura)
@@ -202,7 +283,9 @@ def main() -> None:
     """
     PASTA_RESULTADOS.mkdir(parents=True, exist_ok=True)
 
-    comparacao = adiciona_distancia_euclidiana(carrega_comparacao())
+    comparacao = carrega_comparacao()
+    comparacao = adiciona_a_estrela_chebyshev(comparacao)
+    comparacao = adiciona_distancia_euclidiana(comparacao)
     resumo = resume_comparacao(comparacao)
 
     # Salva a comparação par a par e o resumo por k
@@ -211,9 +294,9 @@ def main() -> None:
 
     salva_grafico(comparacao, PASTA_RESULTADOS / "expandidos_por_distancia.png")
 
-    # Mostra o resumo no terminal, com todas as colunas e duas casas decimais
+    # Mostra o resumo no terminal transposto (uma linha por métrica), já que agora são muitas colunas
     with pd.option_context("display.width", 250, "display.max_columns", None, "display.float_format", "{:.2f}".format):
-        print(resumo.to_string(index=False))
+        print(resumo.set_index("k").T.to_string())
 
     print(f"\nresultados salvos em {PASTA_RESULTADOS}")
 

@@ -5,7 +5,7 @@ Busca A*.
 import heapq
 import math
 
-from heuristicas import heuristica_euclidiana
+from heuristicas import FuncaoHeuristica, heuristica_chebyshev, heuristica_euclidiana
 from rede import Grafo, gera_rede_knn
 from resultado import (
     EVENTO_EXPANDIDO,
@@ -16,15 +16,22 @@ from resultado import (
 )
 from utils import sorteia_pares
 
-def busca_a_estrela(grafo: Grafo, origem: int, destino: int, gravarEventos: bool = False) -> ResultadoBusca:
+def busca_a_estrela(
+    grafo: Grafo,
+    origem: int,
+    destino: int,
+    gravarEventos: bool = False,
+    funcaoHeuristica: FuncaoHeuristica = heuristica_euclidiana,
+) -> ResultadoBusca:
     """
     Executa a busca A* da origem até o destino.
 
     A fronteira é um heap ordenado por f(n) = g(n) + h(n), onde g(n) é a
-    distância já percorrida da origem até n e h(n) é a distância em linha
-    reta de n até o destino. Como a heurística euclidiana é admissível e
-    consistente nesta rede, o primeiro caminho que chega ao destino ao ser
-    expandido é o de menor distância.
+    distância já percorrida da origem até n e h(n) é a estimativa da
+    heurística de n até o destino. Por padrão, h(n) é a distância em linha
+    reta. Como as heurísticas disponíveis (euclidiana e Chebyshev) são
+    admissíveis e consistentes nesta rede, o primeiro caminho que chega ao
+    destino ao ser expandido é o de menor distância.
 
     Args:
         grafo: Grafo onde a busca é feita.
@@ -32,6 +39,9 @@ def busca_a_estrela(grafo: Grafo, origem: int, destino: int, gravarEventos: bool
         destino: Vértice que se quer alcançar.
         gravarEventos: Se verdadeiro, grava os eventos de fronteira e expansão
             para a visualização. Deve ficar falso ao medir tempo.
+        funcaoHeuristica: Heurística usada para estimar o custo até o destino.
+            Fica por último e com valor padrão para que a assinatura comum dos
+            algoritmos continue funcionando sem mudanças.
 
     Returns:
         O resultado da busca, com caminho, distância e nós expandidos.
@@ -53,7 +63,7 @@ def busca_a_estrela(grafo: Grafo, origem: int, destino: int, gravarEventos: bool
     # O heapq retira sempre o menor f; em caso de empate, prefere o menor g e
     # depois o menor vértice, o que deixa a ordem determinística
     #
-    fronteira: list[tuple[float, float, int]] = [(heuristica_euclidiana(grafo, origem, destino), 0.0, origem)]
+    fronteira: list[tuple[float, float, int]] = [(funcaoHeuristica(grafo, origem, destino), 0.0, origem)]
 
     # Registra a entrada da origem na fronteira
     if gravarEventos:
@@ -106,7 +116,7 @@ def busca_a_estrela(grafo: Grafo, origem: int, destino: int, gravarEventos: bool
             pais[vizinho] = verticeAtual
 
             # Calcula f somando o custo já percorrido com a estimativa do que falta até o destino
-            prioridade = novoCusto + heuristica_euclidiana(grafo, vizinho, destino)
+            prioridade = novoCusto + funcaoHeuristica(grafo, vizinho, destino)
 
             # Insere a nova entrada do vizinho no heap
             heapq.heappush(fronteira, (prioridade, novoCusto, vizinho))
@@ -129,3 +139,7 @@ if __name__ == "__main__":
     print(f"encontrou = {resultadoTeste.encontrouSolucao} | arestas no caminho = {len(resultadoTeste.caminho) - 1}")
     print(f"distância = {resultadoTeste.distancia:.2f} | nós expandidos = {resultadoTeste.nosExpandidos}")
     print(f"eventos gravados = {len(resultadoTeste.eventos)}")
+
+    # Roda o mesmo par com a heurística de Chebyshev, que deve dar a mesma distância expandindo mais vértices
+    resultadoChebyshev = busca_a_estrela(grafoTeste, origemTeste, destinoTeste, funcaoHeuristica=heuristica_chebyshev)
+    print(f"Chebyshev: distância = {resultadoChebyshev.distancia:.2f} | nós expandidos = {resultadoChebyshev.nosExpandidos}")
