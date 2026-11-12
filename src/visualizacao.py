@@ -17,7 +17,7 @@ matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 import numpy as np
 from matplotlib import animation
-from matplotlib.collections import LineCollection
+from matplotlib.collections import LineCollection, PathCollection
 from matplotlib.colors import to_rgba
 from matplotlib.lines import Line2D
 
@@ -62,6 +62,9 @@ CORES_POR_ESTADO = np.array([to_rgba(COR_NAO_VISTO), to_rgba(COR_FRONTEIRA), to_
 # Tamanho dos vértices comuns e do vértice atual, em pontos ao quadrado (unidade do scatter)
 TAMANHO_VERTICE = 28
 TAMANHO_VERTICE_ATUAL = 90
+
+# Tamanho dos vértices que fazem parte do caminho final, maior que o dos vértices comuns para cada um ficar visível
+TAMANHO_VERTICE_CAMINHO = 60
 
 # Tamanho dos marcadores de origem e destino
 TAMANHO_MARCADOR_EXTREMO = 220
@@ -198,9 +201,12 @@ def desenha_base(eixo: plt.Axes, grafo: Grafo, origem: int, destino: int):
 
     return pontosVertices
 
-def desenha_caminho(eixo: plt.Axes, grafo: Grafo, caminho: list[int], falhou: bool) -> Line2D:
+def desenha_caminho(eixo: plt.Axes, grafo: Grafo, caminho: list[int], falhou: bool) -> tuple[Line2D, PathCollection]:
     """
-    Desenha um caminho como uma linha grossa ligando os vértices em ordem.
+    Desenha um caminho como uma linha grossa ligando os vértices em ordem, com cada vértice destacado.
+
+    O destaque nos vértices deixa visível cada vértice que faz parte do
+    caminho, e não só a linha que passa por eles.
 
     Args:
         eixo: Eixo do matplotlib onde o caminho é desenhado.
@@ -209,7 +215,7 @@ def desenha_caminho(eixo: plt.Axes, grafo: Grafo, caminho: list[int], falhou: bo
         falhou: Se verdadeiro, desenha como trajetória de falha (vermelha e tracejada).
 
     Returns:
-        A linha desenhada.
+        A linha desenhada e o objeto de pontos dos vértices destacados.
     """
     # Separa as coordenadas x e y dos vértices do caminho, na ordem do caminho
     coordenadasX = [grafo.coordenadas[vertice][0] for vertice in caminho]
@@ -222,7 +228,10 @@ def desenha_caminho(eixo: plt.Axes, grafo: Grafo, caminho: list[int], falhou: bo
     # Desenha a linha acima dos vértices e abaixo dos marcadores de origem e destino
     (linhaCaminho,) = eixo.plot(coordenadasX, coordenadasY, color=cor, linestyle=estilo, linewidth=3, solid_capstyle="round", zorder=4)
 
-    return linhaCaminho
+    # Desenha cada vértice do caminho por cima da linha, na mesma cor, com contorno da cor do fundo para separá-lo da linha
+    pontosCaminho = eixo.scatter(coordenadasX, coordenadasY, s=TAMANHO_VERTICE_CAMINHO, c=cor, edgecolors=COR_FUNDO, linewidths=1, zorder=4.5)
+
+    return linhaCaminho, pontosCaminho
 
 def texto_resumo(resultado: ResultadoBusca) -> str:
     """
@@ -256,8 +265,8 @@ def cria_legenda(figura: plt.Figure) -> None:
         Line2D([], [], marker="o", linestyle="", markersize=6, markerfacecolor=COR_FRONTEIRA, markeredgecolor=COR_TEXTO, markeredgewidth=0.3, label="Fronteira"),
         Line2D([], [], marker="o", linestyle="", markersize=6, markerfacecolor=COR_EXPANDIDO, markeredgecolor=COR_TEXTO, markeredgewidth=0.3, label="Expandido"),
         Line2D([], [], marker="o", linestyle="", markersize=10, markerfacecolor=COR_ATUAL, markeredgecolor=COR_TEXTO, markeredgewidth=0.3, label="Expandindo agora"),
-        Line2D([], [], color=COR_CAMINHO, linewidth=3, label="Caminho final"),
-        Line2D([], [], color=COR_TRAJETORIA_FALHA, linewidth=3, linestyle="--", label="Trajetória até falhar"),
+        Line2D([], [], color=COR_CAMINHO, linewidth=3, marker="o", markersize=7, markeredgecolor=COR_FUNDO, label="Caminho final"),
+        Line2D([], [], color=COR_TRAJETORIA_FALHA, linewidth=3, linestyle="--", marker="o", markersize=7, markeredgecolor=COR_FUNDO, label="Trajetória até falhar"),
         Line2D([], [], marker="*", linestyle="", markersize=12, color=COR_TEXTO, label="Origem"),
         Line2D([], [], marker="s", linestyle="", markersize=8, color=COR_TEXTO, label="Destino"),
     ]
@@ -355,16 +364,18 @@ def cria_animacao(
     # Vetor de tamanhos dos vértices, alterado para destacar o vértice atual
     tamanhosBase = np.full(grafo.quantidade_vertices(), TAMANHO_VERTICE, dtype=float)
 
-    # Escolhe a linha final: o caminho encontrado ou a trajetória até a falha
+    # Escolhe o desenho final: o caminho encontrado ou a trajetória até a falha; a lista guarda a linha e os vértices destacados
+    elementosFinais: list = []
     if resultado.encontrouSolucao:
-        linhaFinal = desenha_caminho(eixo, grafo, resultado.caminho, falhou=False)
+        elementosFinais = list(desenha_caminho(eixo, grafo, resultado.caminho, falhou=False))
     else:
         trajetoria = extrai_trajetoria(grafo, resultado.eventos)
-        linhaFinal = desenha_caminho(eixo, grafo, trajetoria, falhou=True) if trajetoria and len(trajetoria) > 1 else None
+        if trajetoria and len(trajetoria) > 1:
+            elementosFinais = list(desenha_caminho(eixo, grafo, trajetoria, falhou=True))
 
-    # A linha final fica escondida até o fim da animação
-    if linhaFinal is not None:
-        linhaFinal.set_visible(False)
+    # O caminho final fica escondido até o fim da animação
+    for elemento in elementosFinais:
+        elemento.set_visible(False)
 
     # Título que muda a cada quadro
     titulo = eixo.set_title("", fontsize=12, color=COR_TEXTO)
@@ -401,9 +412,9 @@ def cria_animacao(
         pontosVertices.set_facecolors(cores)
         pontosVertices.set_sizes(tamanhos)
 
-        # Mostra a linha final apenas nos quadros parados do fim
-        if linhaFinal is not None:
-            linhaFinal.set_visible(not mostrandoBusca)
+        # Mostra o caminho final (linha e vértices destacados) apenas nos quadros parados do fim
+        for elemento in elementosFinais:
+            elemento.set_visible(not mostrandoBusca)
 
         # Conta os vértices expandidos até este passo
         expandidosAteAgora = int(np.count_nonzero(estados == ESTADO_EXPANDIDO))
@@ -414,7 +425,7 @@ def cria_animacao(
         else:
             titulo.set_text(f"{nomeAlgoritmo}\n{texto_resumo(resultado)}")
 
-        return [pontosVertices, titulo] + ([linhaFinal] if linhaFinal is not None else [])
+        return [pontosVertices, titulo] + elementosFinais
 
     # Cria a animação chamando atualiza_quadro para cada quadro, sem blit para o título também ser redesenhado
     animacaoBusca = animation.FuncAnimation(figura, atualiza_quadro, frames=totalQuadros, blit=False)
